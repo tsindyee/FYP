@@ -1,0 +1,158 @@
+import csv
+import numpy as np
+import random
+import math
+
+dimension = 3
+def getMDPResult():
+	with open('MDP19.csv', 'r') as csvfile:
+		reader = csv.DictReader(csvfile)
+		# for row in reader:
+		# 	print row
+		return list(reader)
+		csvfile.close()
+
+
+allState = getMDPResult()
+
+def reshapeBoard(allState):
+	for state in allState:
+		modified_board = [int(s) for s in list(state["board"]) if s.isdigit()]
+		array = np.array(modified_board)
+		array = np.reshape(array, (3, 3))
+		state["board"] = array
+
+def reshapePolicy(allState):
+	for state in allState:
+		modified_policy = [int(s) for s in list(state["policy"]) if s.isdigit()]
+		if len(modified_policy):
+			state["policy"] = modified_policy
+		else:
+			state["policy"] = None
+
+
+def killThreeConsecutiveOne(array):
+	numberofLineKilled = 0
+	for i in range(dimension):
+		if array[i][0] != 0 and array[i][1] != 0 and array[i][2] != 0:
+			array[i][0] = 2
+			array[i][1] = 2
+			array[i][2] = 2
+			numberofLineKilled +=1
+
+		if array[0][i] != 0 and array[1][i] != 0 and array[2][i] !=0:
+			array[0][i] = 2
+			array[1][i] = 2
+			array[2][i] = 2
+			numberofLineKilled +=1
+	for i in range(dimension):
+		for j in range(dimension):
+			if array[i][j] == 2:
+				array[i][j] = 0
+	return {'array':array, 'numberofLineKilled':numberofLineKilled }
+
+def findPolicyWithBoardAndPiece(board, piece):
+	array = [ myState for myState in allState if np.array_equal(myState["board"], board) and int(myState["piece"]) == piece]
+	if len(array) == 1:
+		return array[0]["policy"]
+	else:
+		return None
+
+def takeAction(board, piece, policy):
+	global score
+	x = policy[0]
+	y = policy[1]
+	print "piece"
+	newboard = np.copy(board)
+	if piece == 0:
+		print "[X][X]"
+		newboard[x][y] = 1
+		newboard[x][y+1] = 1
+	if piece == 1:
+		print "[X]"
+		print "[X]"
+		newboard[x][y] = 1
+		newboard[x+1][y] = 1
+	if piece == 2:
+		print "[X]"
+		newboard[x][y] = 1
+	if piece == 3:
+		print "[X][X]"
+		print "[X]"
+		newboard[x][y] = 1
+		newboard[x][y+1] = 1
+		newboard[x+1][y] = 1
+	if piece == 4:
+		print "[X][X]"
+		print "   [X]"
+		newboard[x][y] = 1
+		newboard[x][y+1] = 1
+		newboard[x+1][y+1] = 1
+	if piece == 5:
+		print "[X]"
+		print "[X][X]"
+		newboard[x][y] = 1
+		newboard[x+1][y] = 1
+		newboard[x+1][y+1] = 1
+	if piece == 6:
+		print "   [X]"
+		print "[X][X]"
+		newboard[x][y+1] = 1
+		newboard[x+1][y] = 1
+		newboard[x+1][y+1] = 1
+	tmp = killThreeConsecutiveOne(newboard)
+	newboard = tmp["array"]
+	score += math.pow(tmp["numberofLineKilled"], 2) * 10
+
+	print "(x, y) =", x, y
+	print "Old: "
+	print board
+	print "new: "
+	print newboard
+
+	return newboard
+
+
+def startARound(board, roundCount):
+	# number = random.randint(1, 10)
+	# piece = -1
+	# if number <= 4:
+	# 	piece = 0
+	# if number > 4 and number <=8:
+	# 	piece = 1
+	# if number > 8:
+	# 	piece = 2
+	piece = random.randint(0, 6)
+	policy = findPolicyWithBoardAndPiece(board, piece)
+	print "========Round = ", roundCount, "==========="
+	print "piece = ", piece
+	if policy:
+		print "policy = ", policy
+		board = takeAction(board, piece, policy)
+	return board
+
+
+def startGame():
+	newboard = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+	roundCount = 0
+	while True:
+		roundCount += 1
+		previousBoard = np.copy(newboard)
+		newboard = startARound(newboard, roundCount)
+		if np.array_equal(newboard, previousBoard):
+			print "GameOver"
+			break
+		print "Score = ", score
+score = 0
+allState = getMDPResult()
+reshapePolicy(allState)
+reshapeBoard(allState)
+
+# with open("Output.txt", "w") as text_file:
+# 	count = 0
+# 	for state in allState:
+# 		count += 1
+# 		text_file.write("%d %s \n" %(count,state["policy"]))
+
+initalGrid = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+startGame()
